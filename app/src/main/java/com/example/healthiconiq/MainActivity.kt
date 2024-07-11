@@ -61,6 +61,7 @@ class MainActivity : AppCompatActivity() {
                     val intent = Intent(this, MainActivity2::class.java).apply {
                         putExtra("imageUri", uri.toString())
                         putExtra("description", text)
+                        putExtra("language_type", lang)
                     }
                     startActivity(intent)
                 }
