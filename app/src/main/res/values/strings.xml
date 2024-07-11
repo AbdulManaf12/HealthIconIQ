@@ -3,4 +3,5 @@
     <string name="gallery"> Gallery </string>
     <string name="camera"> Camera </string>
     <string name="healthiconiq">HealthIconIQ</string>
+    <string name="describe">Describe</string>
 </resources>
