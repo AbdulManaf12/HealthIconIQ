@@ -4,4 +4,6 @@
     <string name="camera"> Camera </string>
     <string name="healthiconiq">HealthIconIQ</string>
     <string name="describe">Describe</string>
+    <string name="speak">Speak</string>
+    <string name="back_to_home">Back to Home</string>
 </resources>

@@ -37,7 +37,6 @@ class MainActivity : AppCompatActivity() {
         val btnGallery = findViewById<Button>(R.id.btnGallery)
         val spinnerLanguage = findViewById<Spinner>(R.id.spinnerLanguage)
         val btnDescribe = findViewById<Button>(R.id.btnDescribe)
-        val imageView = findViewById<ImageView>(R.id.imageView)
 
         btnCamera.setOnClickListener {
             openCamera()
@@ -58,15 +57,16 @@ class MainActivity : AppCompatActivity() {
         btnDescribe.setOnClickListener {
             imageUri?.let { uri ->
                 selectedLanguage?.let { lang ->
-                   val text: String = CHATGPT_API.getData(uri, lang)
-
-                    // Simulate fetching data
-                    Toast.makeText(this, "Processing image in ${text}...", Toast.LENGTH_LONG)
-                        .show()
-
+                    val text: String = CHATGPT_API.getData(uri, lang)
+                    val intent = Intent(this, MainActivity2::class.java).apply {
+                        putExtra("imageUri", uri.toString())
+                        putExtra("description", text)
+                    }
+                    startActivity(intent)
                 }
             }
         }
+
     }
 
     private fun checkPermissions() {
