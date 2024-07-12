@@ -1,7 +1,13 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
     <style name="Base.Theme.HealthIconIQ" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your dark theme here. -->
-        <!-- <item name="colorPrimary">@color/my_dark_primary</item> -->
+        <!-- Customize your light theme here. -->
+        <item name="colorPrimary">@color/green_default</item>
+        <item name="colorPrimaryVariant">@color/green_pressed</item>
+        <item name="colorOnPrimary">@android:color/white</item> <!-- Assuming white text on green background -->
+    </style>
+
+    <style name="Theme.HealthIconIQ" parent="Base.Theme.HealthIconIQ">
+        <!-- Additional theme customizations here -->
     </style>
 </resources>

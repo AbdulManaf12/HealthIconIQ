@@ -2,8 +2,12 @@
     <!-- Base application theme. -->
     <style name="Base.Theme.HealthIconIQ" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+        <item name="colorPrimary">@color/green_default</item>
+        <item name="colorPrimaryVariant">@color/green_pressed</item>
+        <item name="colorOnPrimary">@android:color/white</item> <!-- Assuming white text on green background -->
     </style>
 
-    <style name="Theme.HealthIconIQ" parent="Base.Theme.HealthIconIQ" />
+    <style name="Theme.HealthIconIQ" parent="Base.Theme.HealthIconIQ">
+        <!-- Additional theme customizations here -->
+    </style>
 </resources>

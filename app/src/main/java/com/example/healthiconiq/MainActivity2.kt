@@ -50,16 +50,29 @@ class MainActivity2 : AppCompatActivity(), TextToSpeech.OnInitListener {
 
     override fun onInit(status: Int) {
         if (status == TextToSpeech.SUCCESS) {
+            val localeEnglish = Locale.US
+            val localeUrdu = Locale("ur", "PK")
+            val localeSindhi = Locale("sd", "PK")
+
             when (this.language_type) {
-                "English" -> textToSpeech.language = Locale.US
-                "اردو Urdu" -> textToSpeech.language = Locale("ur", "PK")
-                "سنڌي Sindhi" -> textToSpeech.language = Locale("sd", "PK")
+                "English" -> setLanguage(textToSpeech, localeEnglish)
+                "اردو Urdu" -> setLanguage(textToSpeech, localeUrdu)
+                "سنڌي Sindhi" -> setLanguage(textToSpeech, localeSindhi)
                 else -> textToSpeech.language = Locale.US
             }
         } else {
             Log.e("TTS", "Initialization failed")
         }
     }
+
+    private fun setLanguage(tts: TextToSpeech, locale: Locale) {
+        if (tts.isLanguageAvailable(locale) == TextToSpeech.LANG_COUNTRY_AVAILABLE) {
+            tts.language = locale
+        } else {
+            Log.e("TTS", "Language ${locale.displayLanguage} not supported.")
+        }
+    }
+
 
 
     private fun speakOut(text: String) {

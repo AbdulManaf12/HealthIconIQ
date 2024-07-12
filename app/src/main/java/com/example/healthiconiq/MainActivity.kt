@@ -57,7 +57,7 @@ class MainActivity : AppCompatActivity() {
         btnDescribe.setOnClickListener {
             imageUri?.let { uri ->
                 selectedLanguage?.let { lang ->
-                    val text: String = CHATGPT_API.getData(uri, lang)
+                    val text: String = CHATGPT_API.getData(uri, lang).toString()
                     val intent = Intent(this, MainActivity2::class.java).apply {
                         putExtra("imageUri", uri.toString())
                         putExtra("description", text)
