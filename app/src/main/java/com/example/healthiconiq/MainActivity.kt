@@ -1,5 +1,6 @@
 package com.example.healthiconiq
 
+import DataCallback
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -7,6 +8,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
+import android.util.Log
 import android.view.View
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -66,15 +68,33 @@ class MainActivity : AppCompatActivity() {
             imageUri?.let { uri ->
                 selectedLanguage?.let { lang ->
                     CoroutineScope(Dispatchers.Main).launch {
-                        val text = withContext(Dispatchers.IO) {
-                            CHATGPT_API.getData(this@MainActivity, uri, lang, API_KEY)
+                        var text = ""
+                            withContext(Dispatchers.IO) {
+                            CHATGPT_API.getData(this@MainActivity, uri, lang, API_KEY,object : DataCallback {
+                                override fun onSuccess(data: String) {
+                                    println("Success: $data")
+                                    text = data
+
+                                    val intent = Intent(this@MainActivity, MainActivity2::class.java).apply {
+                                        putExtra("imageUri", uri.toString())
+                                        putExtra("description", text)
+                                        putExtra("language_type", lang)
+                                    }
+                                    startActivity(intent)
+                                }
+
+                                override fun onFailure(error: String) {
+                                    text =error
+                                    val intent = Intent(this@MainActivity, MainActivity2::class.java).apply {
+                                        putExtra("imageUri", uri.toString())
+                                        putExtra("description", text)
+                                        putExtra("language_type", lang)
+                                    }
+                                    startActivity(intent)
+                                }
+                            })
                         }
-                        val intent = Intent(this@MainActivity, MainActivity2::class.java).apply {
-                            putExtra("imageUri", uri.toString())
-                            putExtra("description", text)
-                            putExtra("language_type", lang)
-                        }
-                        startActivity(intent)
+
                     }
                 }
             }
