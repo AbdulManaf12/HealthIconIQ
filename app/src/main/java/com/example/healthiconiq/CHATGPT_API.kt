@@ -1,5 +1,6 @@
 import android.content.Context
 import android.net.Uri
+import android.util.Log
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -16,7 +17,7 @@ object CHATGPT_API {
 
     fun getData(context: Context, imageUri: Uri, language: String, apiKey: String, callback: DataCallback) {
         val prompt = "Consider this medical symbol image and explain it or give me the meaning of it in: $language"
-
+        Log.d("API key in getData: ",apiKey)
         context.contentResolver.openInputStream(imageUri)?.use { inputStream ->
             val bytes = inputStream.readBytes()
             val requestBody = bytes.toRequestBody("image/png".toMediaTypeOrNull(), 0)

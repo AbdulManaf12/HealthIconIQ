@@ -5,6 +5,7 @@ import DataCallback
 import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.net.Uri
@@ -19,6 +20,8 @@ import android.widget.ProgressBar
 import android.widget.Spinner
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -38,6 +41,7 @@ class MainActivity : AppCompatActivity() {
     private val CAMERA_REQUEST_CODE = 101
     private val GALLERY_REQUEST_CODE = 102
     private val PERMISSION_REQUEST_CODE = 103
+    private val CAMERA_PERMISSION_REQUEST_CODE = 104
     private var imageUri: Uri? = null
     private var selectedLanguage: String? = null
     private lateinit var API_KEY: String
@@ -54,7 +58,14 @@ class MainActivity : AppCompatActivity() {
         val btnSettings = findViewById<ImageView>(R.id.imgSettings)
 
         btnCamera.setOnClickListener {
-            openCamera()
+            if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this, arrayOf(android.Manifest.permission.CAMERA), CAMERA_PERMISSION_REQUEST_CODE)
+            }
+            else
+            {
+                openCamera()
+            }
+
         }
 
         btnGallery.setOnClickListener {
@@ -111,12 +122,12 @@ class MainActivity : AppCompatActivity() {
                                         progressBar.visibility = View.GONE
                                         text = error
                                         showNoCorrectImageDialog()
-                                        val intent = Intent(this@MainActivity, MainActivity2::class.java).apply {
-                                            putExtra("imageUri", uri.toString())
-                                            putExtra("description", text)
-                                            putExtra("language_type", lang)
-                                        }
-                                        startActivity(intent)
+//                                        val intent = Intent(this@MainActivity, MainActivity2::class.java).apply {
+//                                            putExtra("imageUri", uri.toString())
+//                                            putExtra("description", text)
+//                                            putExtra("language_type", lang)
+//                                        }
+//                                        startActivity(intent)
                                     }
                                 }
                             })
@@ -156,7 +167,17 @@ class MainActivity : AppCompatActivity() {
                 displayImage(uri)
             }
         }
+
     }
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == CAMERA_PERMISSION_REQUEST_CODE) {
+            if ((grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED)) {
+               openCamera()
+            } else {
+                Toast.makeText(this, "Camera permission is required to take pictures", Toast.LENGTH_SHORT).show()
+            }
+        }}
 
     private fun openCamera() {
         val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
@@ -262,7 +283,7 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
 
-    public fun loadApiKey(): String {
+    private fun loadApiKey(): String {
         val sharedPreferences = getSharedPreferences("AppSettings", Context.MODE_PRIVATE)
         return sharedPreferences.getString("ApiKey", "") ?: "default_key"
     }
