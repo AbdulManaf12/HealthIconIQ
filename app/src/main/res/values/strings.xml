@@ -6,4 +6,6 @@
     <string name="describe">Describe</string>
     <string name="speak">Speak</string>
     <string name="back_to_home">Back to Home</string>
+    <string name="enter_api_key">Enter API Key</string>
+    <string name="save">Save</string>
 </resources>

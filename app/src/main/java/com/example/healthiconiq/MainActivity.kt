@@ -2,7 +2,11 @@ package com.example.healthiconiq
 
 import CHATGPT_API
 import DataCallback
+import android.app.AlertDialog
+import android.content.Context
 import android.content.Intent
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
@@ -36,7 +40,7 @@ class MainActivity : AppCompatActivity() {
     private val PERMISSION_REQUEST_CODE = 103
     private var imageUri: Uri? = null
     private var selectedLanguage: String? = null
-    private var API_KEY = "sk-proj-s7kSoqUp3qLJWcgyAqH2T3BlbkFJJ36N5NcAXuSJz8hHGMoS"
+    private lateinit var API_KEY: String
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,6 +51,7 @@ class MainActivity : AppCompatActivity() {
         val spinnerLanguage = findViewById<Spinner>(R.id.spinnerLanguage)
         val btnDescribe = findViewById<Button>(R.id.btnDescribe)
         val progressBar = findViewById<ProgressBar>(R.id.progressBar)
+        val btnSettings = findViewById<ImageView>(R.id.imgSettings)
 
         btnCamera.setOnClickListener {
             openCamera()
@@ -67,8 +72,13 @@ class MainActivity : AppCompatActivity() {
         btnDescribe.setOnClickListener {
             imageUri?.let { uri ->
                 selectedLanguage?.let { lang ->
+                    if (!isNetworkAvailable(this)) {
+                        showNoConnectionDialog()
+                    }
+
                     progressBar.visibility = View.VISIBLE
                     CoroutineScope(Dispatchers.Main).launch {
+
                         var text = ""
                         withContext(Dispatchers.IO) {
                             CHATGPT_API.getData(this@MainActivity, uri, lang, API_KEY, object : DataCallback {
@@ -77,9 +87,15 @@ class MainActivity : AppCompatActivity() {
                                         progressBar.visibility = View.GONE
                                         val gson = Gson()
                                         val mapType = object : TypeToken<Map<String, String>>() {}.type
-                                        val result: Map<String, String> = gson.fromJson(data, mapType)
-                                        println(result["response"])
-                                        text = result["response"].toString()
+                                        var result: Map<String, String>? = null
+                                        try {
+                                            result = gson.fromJson(data, mapType)
+                                            println(result?.get("response"))
+                                            text = result?.get("response").toString()
+                                        }
+                                        catch (e : Exception){
+                                            showNoCorrectImageDialog()
+                                        }
 
                                         val intent = Intent(this@MainActivity, MainActivity2::class.java).apply {
                                             putExtra("imageUri", uri.toString())
@@ -94,6 +110,7 @@ class MainActivity : AppCompatActivity() {
                                     runOnUiThread {
                                         progressBar.visibility = View.GONE
                                         text = error
+                                        showNoCorrectImageDialog()
                                         val intent = Intent(this@MainActivity, MainActivity2::class.java).apply {
                                             putExtra("imageUri", uri.toString())
                                             putExtra("description", text)
@@ -107,6 +124,21 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             }
+        }
+
+        btnSettings.setOnClickListener {
+            val intent = Intent(this, SettingsActivity::class.java)
+            startActivity(intent)
+        }
+
+
+        if (!isNetworkAvailable(this)) {
+            showNoConnectionDialog()
+        }
+        this.API_KEY = loadApiKey()
+
+        if(API_KEY.isEmpty()){
+            showNoAPI_KEYDialog()
         }
     }
 
@@ -177,5 +209,61 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, "Error while creating file: ${ex.localizedMessage}", Toast.LENGTH_SHORT).show()
             null
         }
+    }
+
+    fun isNetworkAvailable(context: Context): Boolean {
+        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val activeNetwork = connectivityManager.activeNetwork
+        val networkCapabilities = connectivityManager.getNetworkCapabilities(activeNetwork)
+        return networkCapabilities?.let {
+            it.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) || it.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) || it.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
+        } ?: false
+    }
+
+    fun showNoConnectionDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("No Internet Connection")
+            .setMessage("Please check your internet connection and try again.")
+            .setPositiveButton("Retry") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .setNegativeButton("Cancel") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .setCancelable(false)
+            .show()
+    }
+
+    fun showNoAPI_KEYDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("API Error")
+            .setMessage("Please check your api key and try again.")
+            .setPositiveButton("Retry") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .setNegativeButton("Cancel") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .setCancelable(false)
+            .show()
+    }
+
+    fun showNoCorrectImageDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("INPUT Error")
+            .setMessage("Please check your image should be correct and try again.")
+            .setPositiveButton("Retry") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .setNegativeButton("Cancel") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .setCancelable(false)
+            .show()
+    }
+
+    public fun loadApiKey(): String {
+        val sharedPreferences = getSharedPreferences("AppSettings", Context.MODE_PRIVATE)
+        return sharedPreferences.getString("ApiKey", "") ?: "default_key"
     }
 }
