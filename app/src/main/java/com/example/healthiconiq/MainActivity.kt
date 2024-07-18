@@ -11,6 +11,7 @@ import android.view.View
 import android.widget.AdapterView
 import android.widget.Button
 import android.widget.ImageView
+import android.widget.ProgressBar
 import android.widget.Spinner
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -45,6 +46,7 @@ class MainActivity : AppCompatActivity() {
         val btnGallery = findViewById<Button>(R.id.btnGallery)
         val spinnerLanguage = findViewById<Spinner>(R.id.spinnerLanguage)
         val btnDescribe = findViewById<Button>(R.id.btnDescribe)
+        val progressBar = findViewById<ProgressBar>(R.id.progressBar)
 
         btnCamera.setOnClickListener {
             openCamera()
@@ -65,38 +67,43 @@ class MainActivity : AppCompatActivity() {
         btnDescribe.setOnClickListener {
             imageUri?.let { uri ->
                 selectedLanguage?.let { lang ->
+                    progressBar.visibility = View.VISIBLE
                     CoroutineScope(Dispatchers.Main).launch {
                         var text = ""
-                            withContext(Dispatchers.IO) {
-                            CHATGPT_API.getData(this@MainActivity, uri, lang, API_KEY,object : DataCallback {
+                        withContext(Dispatchers.IO) {
+                            CHATGPT_API.getData(this@MainActivity, uri, lang, API_KEY, object : DataCallback {
                                 override fun onSuccess(data: String) {
+                                    runOnUiThread {
+                                        progressBar.visibility = View.GONE
+                                        val gson = Gson()
+                                        val mapType = object : TypeToken<Map<String, String>>() {}.type
+                                        val result: Map<String, String> = gson.fromJson(data, mapType)
+                                        println(result["response"])
+                                        text = result["response"].toString()
 
-                                    val gson = Gson()
-                                    val mapType = object : TypeToken<Map<String, String>>() {}.type
-                                    val result: Map<String, String> = gson.fromJson(data, mapType)
-                                    println(result["response"])
-                                    text = result["response"].toString()
-                                    
-                                    val intent = Intent(this@MainActivity, MainActivity2::class.java).apply {
-                                        putExtra("imageUri", uri.toString())
-                                        putExtra("description", text)
-                                        putExtra("language_type", lang)
+                                        val intent = Intent(this@MainActivity, MainActivity2::class.java).apply {
+                                            putExtra("imageUri", uri.toString())
+                                            putExtra("description", text)
+                                            putExtra("language_type", lang)
+                                        }
+                                        startActivity(intent)
                                     }
-                                    startActivity(intent)
                                 }
 
                                 override fun onFailure(error: String) {
-                                    text =error
-                                    val intent = Intent(this@MainActivity, MainActivity2::class.java).apply {
-                                        putExtra("imageUri", uri.toString())
-                                        putExtra("description", text)
-                                        putExtra("language_type", lang)
+                                    runOnUiThread {
+                                        progressBar.visibility = View.GONE
+                                        text = error
+                                        val intent = Intent(this@MainActivity, MainActivity2::class.java).apply {
+                                            putExtra("imageUri", uri.toString())
+                                            putExtra("description", text)
+                                            putExtra("language_type", lang)
+                                        }
+                                        startActivity(intent)
                                     }
-                                    startActivity(intent)
                                 }
                             })
                         }
-
                     }
                 }
             }
