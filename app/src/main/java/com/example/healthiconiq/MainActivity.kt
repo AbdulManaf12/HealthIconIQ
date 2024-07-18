@@ -1,35 +1,33 @@
 package com.example.healthiconiq
 
+import CHATGPT_API
 import DataCallback
-import android.Manifest
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
-import android.util.Log
 import android.view.View
-import android.webkit.WebView
-import android.webkit.WebViewClient
 import android.widget.AdapterView
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.Spinner
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.IOException
+import java.nio.charset.StandardCharsets
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+
 
 class MainActivity : AppCompatActivity() {
     private val CAMERA_REQUEST_CODE = 101
@@ -72,9 +70,13 @@ class MainActivity : AppCompatActivity() {
                             withContext(Dispatchers.IO) {
                             CHATGPT_API.getData(this@MainActivity, uri, lang, API_KEY,object : DataCallback {
                                 override fun onSuccess(data: String) {
-                                    println("Success: $data")
-                                    text = data
 
+                                    val gson = Gson()
+                                    val mapType = object : TypeToken<Map<String, String>>() {}.type
+                                    val result: Map<String, String> = gson.fromJson(data, mapType)
+                                    println(result["response"])
+                                    text = result["response"].toString()
+                                    
                                     val intent = Intent(this@MainActivity, MainActivity2::class.java).apply {
                                         putExtra("imageUri", uri.toString())
                                         putExtra("description", text)

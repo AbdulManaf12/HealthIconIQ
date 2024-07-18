@@ -60,6 +60,8 @@ class MainActivity2 : AppCompatActivity(), TextToSpeech.OnInitListener {
                 "سنڌي Sindhi" -> setLanguage(textToSpeech, localeSindhi)
                 else -> textToSpeech.language = Locale.US
             }
+
+            speakOut(tvSymbolDescription.text.toString())
         } else {
             Log.e("TTS", "Initialization failed")
         }
