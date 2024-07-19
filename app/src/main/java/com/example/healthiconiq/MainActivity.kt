@@ -6,6 +6,7 @@ import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Color
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.net.Uri
@@ -20,6 +21,7 @@ import android.widget.ProgressBar
 import android.widget.Spinner
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
@@ -45,10 +47,30 @@ class MainActivity : AppCompatActivity() {
     private var imageUri: Uri? = null
     private var selectedLanguage: String? = null
     private lateinit var API_KEY: String
+    private val ENGLISH : String = "English"
+    private val URDU : String = "اردو\\u00A0\\u00A0\\u00A0\\u00A0\\u00A0\\u00A0\\u00A0\\u00A0\\u00A0\\u00A0\\u00A0\\u00A0 Urdu"
+    private val SINDHI : String = "سنڌي\\u00A0\\u00A0\\u00A0\\u00A0\\u00A0\\u00A0\\u00A0\\u00A0\\u00A0\\u00A0\\u00A0\\u00A0 Sindhi"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        val sharedPreferences = getSharedPreferences("AppSettings", Context.MODE_PRIVATE)
+        var THEME: String = sharedPreferences.getString("THEME", "") ?: ""
+        if (THEME.equals("")) {
+            THEME = "Light"
+            with(sharedPreferences.edit()) {
+                putString("THEME", "Light")
+                apply()
+            }
+        }
+        if (THEME.equals("Dark")) {
+            findViewById<ConstraintLayout>(R.id.main).setBackgroundColor(Color.BLACK)
+        } else {
+            findViewById<ConstraintLayout>(R.id.main).setBackgroundColor(Color.WHITE)
+        }
+
+        println("Theme: " + THEME)
 
         val btnCamera = findViewById<Button>(R.id.btnCamera)
         val btnGallery = findViewById<Button>(R.id.btnGallery)
@@ -58,11 +80,17 @@ class MainActivity : AppCompatActivity() {
         val btnSettings = findViewById<ImageView>(R.id.imgSettings)
 
         btnCamera.setOnClickListener {
-            if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(this, arrayOf(android.Manifest.permission.CAMERA), CAMERA_PERMISSION_REQUEST_CODE)
-            }
-            else
-            {
+            if (ContextCompat.checkSelfPermission(
+                    this,
+                    android.Manifest.permission.CAMERA
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(android.Manifest.permission.CAMERA),
+                    CAMERA_PERMISSION_REQUEST_CODE
+                )
+            } else {
                 openCamera()
             }
 
@@ -73,10 +101,25 @@ class MainActivity : AppCompatActivity() {
         }
 
         spinnerLanguage.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>, view: android.view.View?, position: Int, id: Long) {
+            override fun onItemSelected(
+                parent: AdapterView<*>,
+                view: android.view.View?,
+                position: Int,
+                id: Long
+            ) {
                 selectedLanguage = parent.getItemAtPosition(position).toString()
+
+                if (selectedLanguage.equals(ENGLISH)) {
+                    selectedLanguage = "English"
+                } else if (selectedLanguage.equals(URDU)) {
+                    selectedLanguage = "اردو"
+                } else if (selectedLanguage.equals(SINDHI)) {
+                    selectedLanguage = "سنڌي"
+                }
+
                 updateDescribeButtonVisibility()
             }
+
             override fun onNothingSelected(parent: AdapterView<*>) {}
         }
 
@@ -92,45 +135,47 @@ class MainActivity : AppCompatActivity() {
 
                         var text = ""
                         withContext(Dispatchers.IO) {
-                            CHATGPT_API.getData(this@MainActivity, uri, lang, API_KEY, object : DataCallback {
-                                override fun onSuccess(data: String) {
-                                    runOnUiThread {
-                                        progressBar.visibility = View.GONE
-                                        val gson = Gson()
-                                        val mapType = object : TypeToken<Map<String, String>>() {}.type
-                                        var result: Map<String, String>? = null
-                                        try {
-                                            result = gson.fromJson(data, mapType)
-                                            println(result?.get("response"))
-                                            text = result?.get("response").toString()
+                            CHATGPT_API.getData(
+                                this@MainActivity,
+                                uri,
+                                lang,
+                                API_KEY,
+                                object : DataCallback {
+                                    override fun onSuccess(data: String) {
+                                        runOnUiThread {
+                                            progressBar.visibility = View.GONE
+                                            val gson = Gson()
+                                            val mapType =
+                                                object : TypeToken<Map<String, String>>() {}.type
+                                            var result: Map<String, String>?
+                                            try {
+                                                result = gson.fromJson(data, mapType)
+                                                println(result?.get("response"))
+                                                text = result?.get("response").toString()
+                                            } catch (e: Exception) {
+                                                showNoCorrectImageDialog()
+                                            }
+
+                                            val intent = Intent(
+                                                this@MainActivity,
+                                                MainActivity2::class.java
+                                            ).apply {
+                                                putExtra("imageUri", uri.toString())
+                                                putExtra("description", text)
+                                                putExtra("language_type", lang)
+                                            }
+                                            startActivity(intent)
                                         }
-                                        catch (e : Exception){
+                                    }
+
+                                    override fun onFailure(error: String) {
+                                        runOnUiThread {
+                                            progressBar.visibility = View.GONE
+                                            text = error
                                             showNoCorrectImageDialog()
                                         }
-
-                                        val intent = Intent(this@MainActivity, MainActivity2::class.java).apply {
-                                            putExtra("imageUri", uri.toString())
-                                            putExtra("description", text)
-                                            putExtra("language_type", lang)
-                                        }
-                                        startActivity(intent)
                                     }
-                                }
-
-                                override fun onFailure(error: String) {
-                                    runOnUiThread {
-                                        progressBar.visibility = View.GONE
-                                        text = error
-                                        showNoCorrectImageDialog()
-//                                        val intent = Intent(this@MainActivity, MainActivity2::class.java).apply {
-//                                            putExtra("imageUri", uri.toString())
-//                                            putExtra("description", text)
-//                                            putExtra("language_type", lang)
-//                                        }
-//                                        startActivity(intent)
-                                    }
-                                }
-                            })
+                                })
                         }
                     }
                 }
@@ -142,17 +187,15 @@ class MainActivity : AppCompatActivity() {
             startActivity(intent)
         }
 
-
         if (!isNetworkAvailable(this)) {
             showNoConnectionDialog()
         }
-        this.API_KEY = loadApiKey()
 
-        if(API_KEY.isEmpty()){
+        this.API_KEY = loadApiKey()
+        if (API_KEY.isEmpty()) {
             showNoAPI_KEYDialog()
         }
     }
-
 
     @Deprecated("This method has been deprecated in favor of using the Activity Result API")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -208,10 +251,20 @@ class MainActivity : AppCompatActivity() {
         val imageView = findViewById<ImageView>(R.id.imageView)
         imageView.setImageURI(uri)
         updateDescribeButtonVisibility()
+        updateImageDisplayVisibility()
     }
 
     private fun updateDescribeButtonVisibility() {
         val btnDescribe = findViewById<Button>(R.id.btnDescribe)
+        if (imageUri != null && selectedLanguage != null) {
+            btnDescribe.visibility = View.VISIBLE
+        } else {
+            btnDescribe.visibility = View.INVISIBLE
+        }
+    }
+
+    private fun updateImageDisplayVisibility() {
+        val btnDescribe = findViewById<ImageView>(R.id.imageView)
         if (imageUri != null && selectedLanguage != null) {
             btnDescribe.visibility = View.VISIBLE
         } else {
@@ -286,5 +339,25 @@ class MainActivity : AppCompatActivity() {
     private fun loadApiKey(): String {
         val sharedPreferences = getSharedPreferences("AppSettings", Context.MODE_PRIVATE)
         return sharedPreferences.getString("ApiKey", "") ?: "default_key"
+    }
+
+    override fun onResume() {
+        super.onResume()
+        val sharedPreferences = getSharedPreferences("AppSettings", Context.MODE_PRIVATE)
+        var THEME : String = sharedPreferences.getString("THEME", "") ?: ""
+        if(THEME.equals("")){
+            THEME = "Light"
+            with (sharedPreferences.edit()) {
+                putString("THEME", "Light")
+                apply()
+            }
+        }
+        if(THEME.equals("Dark")){
+            findViewById<ConstraintLayout>(R.id.main).setBackgroundColor(Color.BLACK)
+        }else{
+            findViewById<ConstraintLayout>(R.id.main).setBackgroundColor(Color.WHITE)
+        }
+
+        println("Theme: " + THEME)
     }
 }

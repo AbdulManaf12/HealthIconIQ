@@ -2,7 +2,7 @@
 <resources>
     <string-array name="language_options">
         <item>English</item>
-        <item>اردو Urdu</item>
-        <item>سنڌي Sindhi</item>
+        <item>اردو\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0 Urdu</item>
+        <item>سنڌي\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0 Sindhi</item>
     </string-array>
 </resources>
