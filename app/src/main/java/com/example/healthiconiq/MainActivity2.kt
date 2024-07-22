@@ -1,28 +1,27 @@
 package com.example.healthiconiq
 
-import android.animation.ObjectAnimator
-import android.animation.PropertyValuesHolder
-import android.annotation.SuppressLint
+import android.content.Context
+import android.graphics.drawable.AnimationDrawable
+import android.media.MediaPlayer
 import android.net.Uri
 import android.os.Bundle
-import android.speech.tts.TextToSpeech
-import android.speech.tts.UtteranceProgressListener
-import android.util.Log
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import java.util.Locale
+import java.io.File
+import java.io.FileOutputStream
 
-class MainActivity2 : AppCompatActivity(), TextToSpeech.OnInitListener {
-    private lateinit var textToSpeech: TextToSpeech
+class MainActivity2 : AppCompatActivity() {
     private lateinit var imageView: ImageView
     private lateinit var tvSymbolDescription: TextView
     private lateinit var language_type: String
+    private lateinit var description: String
     private lateinit var btnSpeak: ImageView
-    private var heartbeatAnimator: ObjectAnimator? = null
+    private lateinit var API_KEY: String
+    private var mediaPlayer: MediaPlayer? = null
 
-    @SuppressLint("MissingInflatedId")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main2)
@@ -32,103 +31,87 @@ class MainActivity2 : AppCompatActivity(), TextToSpeech.OnInitListener {
         btnSpeak = findViewById(R.id.btnSpeak)
         val btnBackToHome = findViewById<Button>(R.id.btnBackToHome)
 
-        textToSpeech = TextToSpeech(this, this)
-
         intent?.extras?.let {
             val uriString = it.getString("imageUri")
-            val description = it.getString("description")
+            this.description = it.getString("description").toString()
             this.language_type = it.getString("language_type").toString()
+            this.API_KEY = loadApiKey()
             tvSymbolDescription.text = description
             if (uriString != null) {
                 imageView.setImageURI(Uri.parse(uriString))
             }
         }
 
+        val api = TTS_OpenAI_API()
+
+        btnSpeak.isEnabled = false
+        startBlinkingAnimation()
+
+        fetchAndPlayAudio(api)
+
         btnSpeak.setOnClickListener {
-            speakOut(tvSymbolDescription.text.toString())
+            fetchAndPlayAudio(api)
         }
 
         btnBackToHome.setOnClickListener {
+            mediaPlayer?.stop()
+            mediaPlayer?.release()
+            mediaPlayer = null
             finish()
         }
     }
 
-    private fun startHeartbeatAnimation() {
-        heartbeatAnimator = ObjectAnimator.ofPropertyValuesHolder(
-            btnSpeak,
-            PropertyValuesHolder.ofFloat("scaleX", 1.2f),
-            PropertyValuesHolder.ofFloat("scaleY", 1.2f)
-        ).apply {
-            duration = 500
-            repeatMode = ObjectAnimator.REVERSE
-            repeatCount = ObjectAnimator.INFINITE
-            start()
-        }
-    }
-
-    private fun stopHeartbeatAnimation() {
-        heartbeatAnimator?.let {
-            it.end()
-            btnSpeak.animate().scaleX(1f).scaleY(1f).setDuration(200).start()
-        }
-    }
-
-    private fun speakOut(text: String) {
-        val params = Bundle()
-        params.putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "")
-        textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, params, "UniqueID")
-        startHeartbeatAnimation()
-    }
-
-    override fun onInit(status: Int) {
-        if (status == TextToSpeech.SUCCESS) {
-            val localeEnglish = Locale.US
-            val localeUrdu = Locale("ur", "PK")
-            val localeSindhi = Locale("sd", "PK")
-
-            when (this.language_type) {
-                "English" -> setLanguage(textToSpeech, localeEnglish)
-                "اردو Urdu" -> setLanguage(textToSpeech, localeUrdu)
-                "سنڌي Sindhi" -> setLanguage(textToSpeech, localeSindhi)
-                else -> textToSpeech.language = Locale.US
+    private fun fetchAndPlayAudio(api: TTS_OpenAI_API) {
+        api.getData(description, API_KEY) { mp3Bytes ->
+            runOnUiThread {
+                if (mp3Bytes != null) {
+                    playAudio(mp3Bytes)
+                } else {
+                    Toast.makeText(this, "Failed to retrieve audio.", Toast.LENGTH_SHORT).show()
+                    btnSpeak.isEnabled = true
+                }
             }
-
-            textToSpeech.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
-                override fun onStart(utteranceId: String?) {}
-
-                override fun onDone(utteranceId: String?) {
-                    runOnUiThread {
-                        stopHeartbeatAnimation()
-                    }
-                }
-
-                override fun onError(utteranceId: String?) {
-                    runOnUiThread {
-                        stopHeartbeatAnimation()
-                    }
-                }
-            })
-
-            speakOut(tvSymbolDescription.text.toString())
-        } else {
-            Log.e("TTS", "Initialization failed")
         }
     }
 
-    private fun setLanguage(tts: TextToSpeech, locale: Locale) {
-        if (tts.isLanguageAvailable(locale) == TextToSpeech.LANG_COUNTRY_AVAILABLE) {
-            tts.language = locale
-        } else {
-            Log.e("TTS", "Language ${locale.displayLanguage} not supported.")
+    private fun playAudio(mp3Bytes: ByteArray) {
+        try {
+            val tempFile = File.createTempFile("audio", "mp3", cacheDir)
+            val fos = FileOutputStream(tempFile)
+            fos.write(mp3Bytes)
+            fos.close()
+
+            mediaPlayer?.release()
+            mediaPlayer = MediaPlayer().apply {
+                setDataSource(tempFile.absolutePath)
+                prepare()
+                start()
+                setOnCompletionListener {
+                    btnSpeak.isEnabled = true
+                    stopBlinkingAnimation()
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Toast.makeText(this, "Error playing audio.", Toast.LENGTH_SHORT).show()
+            btnSpeak.isEnabled = true
+            stopBlinkingAnimation()
         }
     }
 
-    override fun onDestroy() {
-        stopHeartbeatAnimation()
-        if (textToSpeech != null) {
-            textToSpeech.stop()
-            textToSpeech.shutdown()
-        }
-        super.onDestroy()
+    private fun startBlinkingAnimation() {
+        btnSpeak.setBackgroundResource(R.drawable.blinking_animation)
+        val animationDrawable = btnSpeak.background as AnimationDrawable
+        animationDrawable.start()
+    }
+
+    private fun stopBlinkingAnimation() {
+        val animationDrawable = btnSpeak.background as? AnimationDrawable
+        animationDrawable?.stop()
+    }
+
+    private fun loadApiKey(): String {
+        val sharedPreferences = getSharedPreferences("AppSettings", Context.MODE_PRIVATE)
+        return sharedPreferences.getString("ApiKey", "") ?: "default_key"
     }
 }

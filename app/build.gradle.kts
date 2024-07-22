@@ -54,4 +54,8 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.volley)
     implementation(libs.gson)
+    implementation (libs.kotlinx.coroutines.android.v160)
+    implementation (libs.okhttp.v493)
+    implementation (libs.logging.interceptor.v493)
+
 }
