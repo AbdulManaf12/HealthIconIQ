@@ -13,6 +13,9 @@ import androidx.appcompat.app.AppCompatActivity
 
 class SettingsActivity : AppCompatActivity() {
     private lateinit var etApiKey: EditText
+    @SuppressLint("UseSwitchCompatOrMaterialCode")
+    private lateinit var themeSwitch: Switch
+    private lateinit var btnSaveApiKey: Button
 
     @SuppressLint("UseSwitchCompatOrMaterialCode")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -20,20 +23,17 @@ class SettingsActivity : AppCompatActivity() {
         setContentView(R.layout.activity_settings)
 
         etApiKey = findViewById(R.id.etApiKey)
-        val btnSaveApiKey = findViewById<Button>(R.id.btnSaveApiKey)
+        themeSwitch = findViewById(R.id.switchTheme)
+        btnSaveApiKey = findViewById(R.id.btnSaveApiKey)
+
 
         etApiKey.setText(getApiKey())
-
         btnSaveApiKey.setOnClickListener {
             saveApiKey(etApiKey.text.toString())
             Toast.makeText(this, "API Key Saved", Toast.LENGTH_SHORT).show()
             finish()
         }
-
         applyTheme()
-
-        val themeSwitch = findViewById<Switch>(R.id.switchTheme)
-
         themeSwitch.setOnCheckedChangeListener(null)
         val sharedPreferences = getSharedPreferences("AppSettings", Context.MODE_PRIVATE)
         val isLightTheme = sharedPreferences.getString("THEME", "Light") == "Light"
@@ -67,8 +67,14 @@ class SettingsActivity : AppCompatActivity() {
         val mainLayout = findViewById<LinearLayout>(R.id.main)
         if (theme == "Dark") {
             mainLayout.setBackgroundColor(Color.BLACK)
+            themeSwitch.text = "Dark"
+            themeSwitch.setTextColor(Color.WHITE)
+            etApiKey.setTextColor(Color.WHITE)
         } else {
             mainLayout.setBackgroundColor(Color.WHITE)
+            themeSwitch.text = "Light"
+            themeSwitch.setTextColor(Color.BLACK)
+            etApiKey.setTextColor(Color.BLACK)
         }
     }
 }
