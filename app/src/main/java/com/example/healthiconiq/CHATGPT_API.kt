@@ -16,7 +16,7 @@ object CHATGPT_API {
     private val client = OkHttpClient()
 
     fun getData(context: Context, imageUri: Uri, language: String, apiKey: String, callback: DataCallback) {
-        val prompt = "Consider this medical symbol image and explain it or give me the meaning of it in: $language"
+        val prompt = "Consider this medical symbol image and explain it or give me the meaning of it with in short limit of one sentence in: $language"
         Log.d("API key in getData: ",apiKey)
         context.contentResolver.openInputStream(imageUri)?.use { inputStream ->
             val bytes = inputStream.readBytes()
